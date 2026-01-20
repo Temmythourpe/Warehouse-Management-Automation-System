@@ -4,7 +4,7 @@
 ![Google Sheets](https://img.shields.io/badge/Google-Sheets-34A853?logo=googlesheets)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5391FE?logo=powershell&logoColor=white)
 
-A warehouse inventory management system demonstration built with n8n workflow automation. This project simulates real WMS operations including stock movements, automated alerts, and comprehensive audit logging.
+A warehouse inventory management system demonstration built with n8n workflow automation. This project simulates real WMS operations, including stock movements, automated alerts, and comprehensive audit logging.
 
 ## Project Overview
 
@@ -56,8 +56,6 @@ Built to showcase skills relevant to **IT Support Technician** roles supporting 
 - Modular, scalable design
 
 ---
-
-## Architecture
 
 <img width="1249" height="902" alt="image" src="https://github.com/user-attachments/assets/b6b58531-7ca2-4231-b367-db1bbff318a3" />
 
