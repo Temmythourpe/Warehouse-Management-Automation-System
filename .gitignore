@@ -1,0 +1,46 @@
+# Environment variables
+.env
+*.env
+
+# Credentials
+credentials/
+*.key
+*.pem
+
+# n8n data
+.n8n/
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# Temporary files
+*.tmp
+temp/
+tmp/
+
+# Build outputs
+dist/
+build/
+
+# Personal notes
+notes.md
+TODO.md
+
+# Backup files
+*.bak
+*~

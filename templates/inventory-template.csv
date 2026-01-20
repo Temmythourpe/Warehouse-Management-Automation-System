@@ -1,0 +1,5 @@
+Product_ID,Product_Name,Location,Quantity,Min_Stock,Category,Last_Updated
+SKU001,Laptop Dell XPS,A1-01,50,10,Electronics,2025-01-17
+SKU002,USB-C Cable,B2-05,200,50,Accessories,2025-01-17
+SKU003,Mouse Wireless,A1-03,75,20,Accessories,2025-01-17
+SKU004,Keyboard Mechanical,A1-02,30,15,Accessories,2025-01-17

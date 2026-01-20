@@ -1,0 +1,572 @@
+{
+  "name": "WMS-Stock Movement Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "warehouse-stock",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -720,
+        -464
+      ],
+      "id": "f18faa0f-74a7-4215-98d7-d5ec1f1f746c",
+      "name": "Webhook",
+      "webhookId": "c7894443-10f5-4189-bc30-7ebed04f7656"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the stock movement data\nconst movement = items[0].json.body;\n\n// Validate required fields\nif (!movement.action || !movement.product_id || !movement.quantity) {\n  throw new Error('Missing required fields: action, product_id, or quantity');\n}\n\n// Define valid actions\nconst validActions = ['receive', 'pick', 'move', 'adjust'];\nif (!validActions.includes(movement.action)) {\n  throw new Error(`Invalid action. Must be one of: ${validActions.join(', ')}`);\n}\n\n// Calculate quantity change based on action\nlet quantityChange = 0;\nswitch(movement.action) {\n  case 'receive':\n    quantityChange = Math.abs(movement.quantity); // Add stock\n    break;\n  case 'pick':\n    quantityChange = -Math.abs(movement.quantity); // Remove stock\n    break;\n  case 'adjust':\n    quantityChange = movement.quantity; // Can be + or -\n    break;\n  case 'move':\n    quantityChange = 0; // Just change location, not quantity\n    break;\n}\n\n// Prepare processed movement data\nconst processedMovement = {\n  timestamp: new Date().toISOString(),\n  action: movement.action,\n  product_id: movement.product_id,\n  quantity_change: quantityChange,\n  location: movement.location || '',\n  from_location: movement.from_location || '',\n  to_location: movement.to_location || movement.location || '',\n  user: movement.user || 'system',\n  notes: movement.notes || '',\n  validated: true\n};\n\nreturn [{\n  json: processedMovement\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        -464
+      ],
+      "id": "27a7b290-5b53-4d5a-b1b2-89a02e4260dd",
+      "name": "Process Stock Movement"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1P1A3QaqfelqdyFM2CBrKnUTfZ6dW03lfXZjOJF2XH2o",
+          "mode": "list",
+          "cachedResultName": "WMS Demo - Warehouse Inventory",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P1A3QaqfelqdyFM2CBrKnUTfZ6dW03lfXZjOJF2XH2o/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Inventory",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P1A3QaqfelqdyFM2CBrKnUTfZ6dW03lfXZjOJF2XH2o/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -160,
+        -464
+      ],
+      "id": "5eda5ecc-a89d-45ad-b97a-2b463a66612a",
+      "name": "Get Current Inventory",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Sr2YDxELjCEz7vH6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the original webhook data\nconst webhookData = $('Webhook').first().json.body;\n\n// Get all inventory rows\nconst inventoryRows = items;\n\n// Find the matching product\nconst product = inventoryRows.find(row => row.json.Product_ID === webhookData.product_id);\n\nif (!product) {\n  throw new Error(`Product ${webhookData.product_id} not found in inventory`);\n}\n\n// Calculate quantity change based on action\nlet quantityChange = 0;\nswitch(webhookData.action) {\n  case 'receive':\n    quantityChange = Math.abs(webhookData.quantity);\n    break;\n  case 'pick':\n    quantityChange = -Math.abs(webhookData.quantity);\n    break;\n  case 'adjust':\n    quantityChange = webhookData.quantity;\n    break;\n  case 'move':\n    quantityChange = 0;\n    break;\n}\n\n// Calculate new stock level\nconst currentStock = parseInt(product.json.Quantity);\nconst newStock = currentStock + quantityChange;\n\n// Check if stock would go negative\nif (newStock < 0) {\n  throw new Error(`Insufficient stock. Current: ${currentStock}, Requested: ${Math.abs(quantityChange)}`);\n}\n\n// Prepare update data\nreturn [{\n  json: {\n    product_id: webhookData.product_id,\n    product_name: product.json.Product_Name,\n    current_stock: currentStock,\n    quantity_change: quantityChange,\n    new_stock: newStock,\n    location: webhookData.location || product.json.Location,\n    min_stock: parseInt(product.json.Min_Stock),\n    action: webhookData.action,\n    user: webhookData.user || 'system',\n    notes: webhookData.notes || '',\n    timestamp: new Date().toISOString(),\n    alert_needed: newStock <= parseInt(product.json.Min_Stock)\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -704,
+        -96
+      ],
+      "id": "816e760c-10e4-483f-ac74-3a07555a3655",
+      "name": "Find Product & Calculate New Stock"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1P1A3QaqfelqdyFM2CBrKnUTfZ6dW03lfXZjOJF2XH2o",
+          "mode": "list",
+          "cachedResultName": "WMS Demo - Warehouse Inventory",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P1A3QaqfelqdyFM2CBrKnUTfZ6dW03lfXZjOJF2XH2o/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Inventory",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P1A3QaqfelqdyFM2CBrKnUTfZ6dW03lfXZjOJF2XH2o/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Product_ID": "={{$json.product_id}}",
+            "Quantity": "={{$json.new_stock}}",
+            "Last_Updated": "={{$json.timestamp}}"
+          },
+          "matchingColumns": [
+            "Product_ID"
+          ],
+          "schema": [
+            {
+              "id": "Product_ID",
+              "displayName": "Product_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Product_Name",
+              "displayName": "Product_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Quantity",
+              "displayName": "Quantity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Min_Stock",
+              "displayName": "Min_Stock",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last_Updated",
+              "displayName": "Last_Updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -416,
+        -240
+      ],
+      "id": "d73155d1-5630-4f82-906f-e6479a7237de",
+      "name": "Update Inventory Stock",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Sr2YDxELjCEz7vH6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1P1A3QaqfelqdyFM2CBrKnUTfZ6dW03lfXZjOJF2XH2o",
+          "mode": "list",
+          "cachedResultName": "WMS Demo - Warehouse Inventory",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P1A3QaqfelqdyFM2CBrKnUTfZ6dW03lfXZjOJF2XH2o/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 586593951,
+          "mode": "list",
+          "cachedResultName": "Transaction Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P1A3QaqfelqdyFM2CBrKnUTfZ6dW03lfXZjOJF2XH2o/edit#gid=586593951"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$json.timestamp}}",
+            "User": "={{$json.user}}",
+            "Action": "={{$json.action}}",
+            "Product_ID": "={{$json.product_id}}",
+            "Quantity_Changed": "={{$json.quantity_change}}",
+            "To_Location": "={{$json.location}}",
+            "New_Stock_Level": "={{$json.new_stock}}",
+            "Notes": "={{$json.notes}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "User",
+              "displayName": "User",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Action",
+              "displayName": "Action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Product_ID",
+              "displayName": "Product_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Quantity_Changed",
+              "displayName": "Quantity_Changed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "From_Location",
+              "displayName": "From_Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "To_Location",
+              "displayName": "To_Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "New_Stock_Level",
+              "displayName": "New_Stock_Level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -416,
+        48
+      ],
+      "id": "a80115cf-6de6-4e82-bb8a-ee281db53671",
+      "name": "Log Transaction",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Sr2YDxELjCEz7vH6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1P1A3QaqfelqdyFM2CBrKnUTfZ6dW03lfXZjOJF2XH2o",
+          "mode": "list",
+          "cachedResultName": "WMS Demo - Warehouse Inventory",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P1A3QaqfelqdyFM2CBrKnUTfZ6dW03lfXZjOJF2XH2o/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 668412556,
+          "mode": "list",
+          "cachedResultName": "Alerts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P1A3QaqfelqdyFM2CBrKnUTfZ6dW03lfXZjOJF2XH2o/edit#gid=668412556"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$('Find Product & Calculate New Stock').item.json.timestamp}}",
+            "Product_ID": "={{$('Find Product & Calculate New Stock').item.json.product_id}}",
+            "Alert_Type": "=Low Stock Warning",
+            "Product_Name": "={{$('Find Product & Calculate New Stock').item.json.product_name}}",
+            "Current_Stock": "={{$('Find Product & Calculate New Stock').item.json.new_stock}}",
+            "Min_Stock": "={{$('Find Product & Calculate New Stock').item.json.min_stock}}",
+            "Message": "=Stock level for {{$json.product_name}} has fallen to {{$json.new_stock}} units (minimum: {{$json.min_stock}}). Please reorder."
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Alert_Type",
+              "displayName": "Alert_Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Product_ID",
+              "displayName": "Product_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Product_Name",
+              "displayName": "Product_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Current_Stock",
+              "displayName": "Current_Stock",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Min_Stock",
+              "displayName": "Min_Stock",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        48,
+        -112
+      ],
+      "id": "cb91d29f-e297-4316-8ab1-8c5d22c71315",
+      "name": "Log Low Stock Alert",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Sr2YDxELjCEz7vH6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2b21ddb7-3190-4cf2-93fe-25a83a5a45b2",
+              "leftValue": "={{$json.alert_needed}}",
+              "rightValue": "=true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -224,
+        -96
+      ],
+      "id": "c16c7fe6-00af-43de-ae37-a9d0184ba4ce",
+      "name": "IF",
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process Stock Movement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Stock Movement": {
+      "main": [
+        [
+          {
+            "node": "Get Current Inventory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Current Inventory": {
+      "main": [
+        [
+          {
+            "node": "Find Product & Calculate New Stock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Product & Calculate New Stock": {
+      "main": [
+        [
+          {
+            "node": "Update Inventory Stock",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Transaction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Inventory Stock": {
+      "main": [
+        []
+      ]
+    },
+    "Log Transaction": {
+      "main": [
+        []
+      ]
+    },
+    "IF": {
+      "main": [
+        [
+          {
+            "node": "Log Low Stock Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "9658bd96-dbcf-44b4-b1a4-537277bf2ede",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3e891a0fc3efafbe4ac6eecb85ae1c141ded72aaa44b34a8ec08b1fd2af6aa4b"
+  },
+  "id": "dR-AlcM_nV-85185bEX6a",
+  "tags": []
+}
