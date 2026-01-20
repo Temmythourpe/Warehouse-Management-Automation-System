@@ -3,7 +3,6 @@
 ![n8n](https://img.shields.io/badge/n8n-Workflow-EA4B71?logo=n8n)
 ![Google Sheets](https://img.shields.io/badge/Google-Sheets-34A853?logo=googlesheets)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5391FE?logo=powershell&logoColor=white)
-![Status](https://img.shields.io/badge/status-demo-blue)
 
 A warehouse inventory management system demonstration built with n8n workflow automation. This project simulates real WMS operations including stock movements, automated alerts, and comprehensive audit logging.
 
@@ -125,7 +124,7 @@ Built to showcase skills relevant to **IT Support Technician** roles supporting 
 
 ---
 
-## 📈 Real-World Applications
+## Real-World Applications
 
 This demo simulates functionality found in enterprise WMS platforms:
 
@@ -143,14 +142,14 @@ This demo simulates functionality found in enterprise WMS platforms:
 ## Skills Demonstrated
 
 **For WMS IT Support roles:**
-- ✅ Understanding of warehouse operations and logistics
-- ✅ System configuration and workflow automation
-- ✅ User access management concepts
-- ✅ Performance monitoring (stock levels, alerts)
-- ✅ Audit trail and compliance tracking
-- ✅ Integration with cloud platforms
-- ✅ API-based system communication
-- ✅ Process automation and optimization
+- Understanding of warehouse operations and logistics
+- System configuration and workflow automation
+- User access management concepts
+- Performance monitoring (stock levels, alerts)
+- Audit trail and compliance tracking
+- Integration with cloud platforms
+- API-based system communication
+- Process automation and optimization
 
 **Technical skills:**
 - n8n workflow automation
