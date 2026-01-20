@@ -59,21 +59,8 @@ Built to showcase skills relevant to **IT Support Technician** roles supporting 
 ---
 
 ## Architecture
-```
-Stock Transaction (Webhook API)
-    ↓
-Validate & Process Movement
-    ↓
-Retrieve Current Inventory
-    ↓
-Calculate New Stock Level
-    ↓
-┌─────────────┬──────────────────┬─────────────┐
-↓             ↓                  ↓             ↓
-Update        Log              Check         (Future)
-Inventory   Transaction      Low Stock      Email Alert
-                              Alert
-```
+
+<img width="1249" height="902" alt="image" src="https://github.com/user-attachments/assets/b6b58531-7ca2-4231-b367-db1bbff318a3" />
 
 ### **Workflow Components:**
 
@@ -100,6 +87,8 @@ Inventory   Transaction      Low Stock      Email Alert
 | Category | Product classification |
 | Last_Updated | Last modification timestamp |
 
+<img width="877" height="274" alt="image" src="https://github.com/user-attachments/assets/3768c74b-433b-46b4-b6ef-301f9857bf4c" />
+
 ### **Transaction Log Sheet**
 | Field | Description |
 |-------|-------------|
@@ -111,6 +100,8 @@ Inventory   Transaction      Low Stock      Email Alert
 | New_Stock_Level | Resulting inventory |
 | Notes | Transaction details |
 
+<img width="1217" height="273" alt="image" src="https://github.com/user-attachments/assets/851fc021-916c-4a72-ac5b-c3f344f414a3" />
+
 ### **Alerts Sheet**
 | Field | Description |
 |-------|-------------|
@@ -120,6 +111,8 @@ Inventory   Transaction      Low Stock      Email Alert
 | Current_Stock | Current quantity |
 | Min_Stock | Threshold breached |
 | Message | Alert description |
+
+<img width="996" height="298" alt="image" src="https://github.com/user-attachments/assets/4ead57c0-1ee1-4a83-86b6-60ac702109ce" />
 
 ---
 
